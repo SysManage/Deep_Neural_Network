@@ -22,20 +22,26 @@ from sklearn.metrics import roc_curve, auc
 # import pandas as pd
 import matplotlib.pyplot as plt
 
+from theanoOCR import preprocessor
+
+import time
+
 
 class Classifier:
 
     def __init__(self, rows, cols):
-        self.path = os.path.join(os.path.dirname(__file__), 'artificial_data')
-        self.path2 = os.path.join(os.path.dirname(__file__), 'input_data')
+        self.path = os.path.join(os.path.dirname(__file__), 'Original_letters')
+        self.path3 = os.path.join(os.path.dirname(__file__), 'Intermidiate_Step')
+        self.path2 = os.path.join(os.path.dirname(__file__), 'Original_input_letters')
         self.listing = None
         self.num_samples = None
         self.inlist = None
         self.label = None
         self.img_rows, self.img_cols = rows, cols
         self.batch_size = 32
-        self.nb_classes = 4
-        self.nb_epoch = 20
+        self.nb_classes = 9
+        # no of rotations
+        self.nb_epoch = 1
         self.img_channels = 1
 
         self.no_filters = 32
@@ -54,15 +60,21 @@ class Classifier:
 
     def read_input_data(self):
         self.inlist = os.listdir(self.path2)
+        # self.num_samples = size(self.listing)
         self.inlist.sort()
+        # print(len(self.inlist))
 
     def preprocess(self):
+
         for file in self.listing:
-            # print(file)
+        #     # print(file)
             im = Image.open(self.path + '/' + file)
             img = im.resize((self.img_rows, self.img_cols))
-            gray = img.convert('L')
-            gray.save(self.path2 + "/" + file, 'JPEG')
+        #     gray = img.convert('L')
+            img.save(self.path3 + "/" + file, 'JPEG')
+
+        preprocessor.pre_processing()
+        time.sleep(5)
 
     def create_matrix(self):
         imgmatrix = array([array(Image.open(self.path2 + "/" + im2)).flatten() for im2 in self.inlist], 'f')
@@ -70,13 +82,18 @@ class Classifier:
 
     def initialize_data(self):
         self.label = np.ones((self.num_samples,), dtype=int)
-        self.label[0:9] = 0
-        self.label[9:113] = 1
-        self.label[113:180] = 2
-        self.label[180:] = 3
+        self.label[0:103] = 0
+        self.label[103:202] = 1
+        self.label[202:291] = 2
+        self.label[291:340] = 3
+        self.label[340:396] = 4
+        self.label[396:515] = 5
+        self.label[515:616] = 6
+        self.label[616:658] = 7
+        self.label[658:] = 8
 
         imgmatrix = self.create_matrix()
-        data, Label = shuffle(imgmatrix, self.label, random_state=2)
+        data, Label = shuffle(imgmatrix, self.label, random_state=4)
         train_data = [data, Label]
 
         (x, y) = (train_data[0], train_data[1])
@@ -144,8 +161,45 @@ class Classifier:
         return score
 
     def test_model(self, model):
-        print(model.predict_classes(self.x_test[1:5]))
-        print(self.y_test[1:5])
+        character = ["ග", "හ", "ක", "ල", "ම", "ප", "ස", "ත", "ය"]
+        evaluation = dict()
+        prediction = model.predict_classes(self.x_test[0:])
+        real = self.y_test[0:]
+        real=real.tolist()
+        print(type(real[0][0]))
+        # print(real)
+
+        for x in range(0, len(prediction)):
+
+            if prediction[x] not in evaluation:
+                evaluation[prediction[x]] = [0, 0]
+                predict_class = real[x].index(1.0)
+
+                if predict_class not in evaluation:
+                    evaluation[predict_class] = [0, 0]
+
+                evaluation[predict_class][0] += 1
+                if prediction[x] == predict_class:
+                    evaluation[prediction[x]][1] += 1
+
+            elif prediction[x] in evaluation:
+                predict_class = real[x].index(1.0)
+
+                if predict_class not in evaluation:
+                    evaluation[predict_class] = [0, 0]
+
+                evaluation[predict_class][0] += 1
+                if prediction[x] == predict_class:
+                    evaluation[prediction[x]][1] += 1
+
+        for key, value in evaluation.items():
+            print(character[key], "  ---> class ", key, "accuracy rate ", (value[1]/value[0])*100, "%")
+
+        print(evaluation)
+
+    def save_model(self,model):
+        fname = os.path.join(os.path.dirname(__file__), 'Ancient_Classifier')
+        model.save_weights(fname)
 
     def draw_roc_curve(self,y_score):
         fpr = dict()
@@ -207,7 +261,7 @@ class Classifier:
 myClassifier = Classifier(200, 200)
 myClassifier.read_original_data()
 myClassifier.read_input_data()
-myClassifier.preprocess()
+# myClassifier.preprocess()
 myClassifier.initialize_data()
 myModel = myClassifier.create_model()
 myModel = myClassifier.model_compile(myModel)
@@ -216,6 +270,7 @@ myModel = myClassifier.model_train(myModel)
 # myClassifier.draw_roc_curve(test_score)
 myClassifier.test_model(myModel)
 myClassifier.get_evaluation(myModel)
+myClassifier.save_model(myModel)
 
 #fname = "/media/nishan/Entertainment/CNN/weights-Test-CNN.hdf5"
 #model.save_weights(fname)
