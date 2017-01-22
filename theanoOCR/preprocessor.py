@@ -26,8 +26,6 @@ def pre_processing():
         kernel = np.ones((6,6),np.uint8)
         open1 = cv2.morphologyEx(th3, cv2.MORPH_HITMISS, element)
         open = cv2.morphologyEx(open1, cv2.MORPH_HITMISS, element)
-        temp=[]
-        temp.append(open)
 
         im2, contours, hierarchy = cv2.findContours(open, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         mask = np.ones(open.shape[:2], dtype="uint8") * 255
@@ -40,13 +38,16 @@ def pre_processing():
             if h > 300 and w > 300:
                 cv2.drawContours(mask, [contour], -1, 0, -1)
 
-
             # discard areas that are too small
             if h < 35 or w < 35:
                 cv2.drawContours(mask, [contour], -1, 0, -1)
 
-        new = cv2.bitwise_and(open1,mask)
+        new = cv2.bitwise_and(open1, mask)
         eroded = cv2.erode(new, element)
+        # blur = cv2.bilateralFilter(eroded, 9, 75, 75)
+        for x in range(0,12):
+            eroded=cv2.medianBlur(eroded, 7)
+
 
         cv2.imwrite(path2+"/"+file, eroded)
 
