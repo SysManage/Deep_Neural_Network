@@ -1,7 +1,22 @@
 import cv2
+import os
 from matplotlib import pyplot as plt
 import numpy as np
-from theanoOCR import openimage as op
+
+save_path = os.path.join(os.path.dirname(__file__), 'Original_input_letters')
+open_path = os.path.join(os.path.dirname(__file__), 'Original_letters')
+
+
+def openImage(dir, file_name):
+    inImg = cv2.imread(dir + os.sep + file_name)
+    img = cv2.cvtColor(inImg, cv2.COLOR_BGR2GRAY)
+    return img
+
+
+def binarizeImage(img):
+    blur = cv2.GaussianBlur(img, (5, 5), 0)
+    ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    return th3
 
 
 def removeLines(bin_image):  # must be a binary image
@@ -9,51 +24,20 @@ def removeLines(bin_image):  # must be a binary image
     minLineLength = 100
     maxLineGap = 70
     lines = cv2.HoughLinesP(bin_image, 5, np.pi / 180, 1000, minLineLength, maxLineGap)
-    if (lines != None):
+    if lines is not None:
         a, b, c = lines.shape
         for i in range(a):
             cv2.line(bin_image, (lines[i][0][0], lines[i][0][1]), (lines[i][0][2], lines[i][0][3]), 0, 3, cv2.LINE_AA)
 
 
-inImg = op.getImage()
-img = cv2.cvtColor(inImg, cv2.COLOR_BGR2GRAY)
-# Otsu's thresholding after Gaussian filtering
-blur = cv2.GaussianBlur(img, (5, 5), 0)
-
-ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-cv2.imshow("Blurred", th3)
-cv2.waitKey()
+file_name = "word2.jpg"
+img = openImage(open_path, file_name)
+th3 = binarizeImage(img)
 removeLines(th3)
 kernel = np.ones((3, 3), np.uint8)
 erosion = cv2.morphologyEx(th3, cv2.MORPH_OPEN, kernel, iterations=1)
-#####
-#
-# sure_bg = cv2.dilate(erosion, kernel, iterations=3)
-#
-# # Finding sure foreground area
-# dist_transform = cv2.distanceTransform(erosion, cv2.DIST_L2, 5)
-# ret, sure_fg = cv2.threshold(dist_transform, 0.7 * dist_transform.max(), 255, 0)
-#
-# # Finding unknown region
-# sure_fg = np.uint8(sure_fg)
-# unknown = cv2.subtract(sure_bg, sure_fg)
-#
-# # Marker labelling
-# ret, markers = cv2.connectedComponents(sure_fg)
-# # Add one to all labels so that sure background is not 0, but 1
-# markers = markers + 1
-# # Now, mark the region of unknown with zero
-# markers[unknown == 255] = 0
-#
-# markers = cv2.watershed(inImg, markers)
-# inImg[markers == -1] = [255, 0, 0]
-#
-# print(len(markers))
-# cv2.imshow("dsa", inImg)
-# cv2.imwrite("watershed.jpg", inImg)
-# cv2.waitKey()
-###########
-erosion_clone = np.copy(erosion)  # np.array(erosion,copy=True)
+
+erosion_clone = erosion.copy()
 print(erosion.shape)
 # close = cv2.morphologyEx(th3, cv2.MORPH_HITMISS, kernel)
 # open = cv2.morphologyEx(close, cv2.MORPH_HITMISS, kernel)
@@ -79,7 +63,6 @@ for contour in contours:
         empty_mask = np.zeros((h, w), np.uint8)
         result = np.where(character_mask == 0, empty_mask,
                           erosion_clone[y:y + h, x:x + w])  # Take Region of interest from erosion_clone
-        cv2.imwrite(str(count) + "contoured.jpg", result)
+        cv2.imwrite(save_path + os.sep + str(count) + " of " + file_name, result)
 
-print("Chars found: "+count)
-
+print("Chars found: " + str(count))
