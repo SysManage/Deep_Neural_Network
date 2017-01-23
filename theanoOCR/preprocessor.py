@@ -21,15 +21,14 @@ def pre_processing():
         blur = cv2.GaussianBlur(img, (5, 5), 0)
         ret3,th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
-        element = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
+        element = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
 
         kernel = np.ones((6,6),np.uint8)
-        morphed = cv2.morphologyEx(th3, cv2.MORPH_HITMISS, element)
-        # open = cv2.morphologyEx(open1, cv2.MORPH_HITMISS, element)
-        temp=np.copy(morphed)
+        open1 = cv2.morphologyEx(th3, cv2.MORPH_HITMISS, element)
+        open = cv2.morphologyEx(open1, cv2.MORPH_HITMISS, element)
 
-        im2, contours, hierarchy = cv2.findContours(morphed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        mask = np.ones(morphed.shape[:2], dtype="uint8") * 255
+        im2, contours, hierarchy = cv2.findContours(open, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        mask = np.ones(open.shape[:2], dtype="uint8") * 255
 
         for contour in contours:
             # get rectangle bounding contour
@@ -37,15 +36,18 @@ def pre_processing():
 
             # discard areas that are too large
             if h > 300 and w > 300:
-                cv2.drawContours(mask, [contour], -1, 0, cv2.FILLED)
-
+                cv2.drawContours(mask, [contour], -1, 0, -1)
 
             # discard areas that are too small
             if h < 35 or w < 35:
-                cv2.drawContours(mask, [contour], -1, 0, cv2.FILLED)
+                cv2.drawContours(mask, [contour], -1, 0, -1)
 
-        new = cv2.bitwise_and(temp,mask)
+        new = cv2.bitwise_and(open1, mask)
         eroded = cv2.erode(new, element)
+        # blur = cv2.bilateralFilter(eroded, 9, 75, 75)
+        for x in range(0,12):
+            eroded=cv2.medianBlur(eroded, 7)
+
 
         cv2.imwrite(path2+"/"+file, eroded)
 
