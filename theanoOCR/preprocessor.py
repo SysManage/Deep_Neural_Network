@@ -21,7 +21,7 @@ def pre_processing():
         blur = cv2.GaussianBlur(img, (5, 5), 0)
         ret3,th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
-        element = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+        element = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 
         kernel = np.ones((6,6),np.uint8)
         open1 = cv2.morphologyEx(th3, cv2.MORPH_HITMISS, element)
@@ -43,12 +43,14 @@ def pre_processing():
                 cv2.drawContours(mask, [contour], -1, 0, -1)
 
         new = cv2.bitwise_and(open1, mask)
+
         eroded = cv2.erode(new, element)
         # blur = cv2.bilateralFilter(eroded, 9, 75, 75)
-        for x in range(0,12):
-            eroded=cv2.medianBlur(eroded, 7)
+        for x in range(1,9,2):
+            eroded=cv2.GaussianBlur(eroded, (x,x),0)
 
-
+        #new = cv2.bitwise_not(eroded)
+        # eroded = cv2.erode(new,element)
         cv2.imwrite(path2+"/"+file, eroded)
 
 pre_processing()
