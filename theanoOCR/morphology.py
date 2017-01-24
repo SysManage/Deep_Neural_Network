@@ -3,8 +3,8 @@ import os
 from matplotlib import pyplot as plt
 import numpy as np
 
-save_path = os.path.join(os.path.dirname(__file__), 'Original_input_letters')
-open_path = os.path.join(os.path.dirname(__file__), 'Original_letters')
+save_path = os.path.join(os.path.dirname(__file__), 'seg_images')
+open_path = os.path.join(os.path.dirname(__file__), 'Input_large_images')
 
 
 def openImage(dir, file_name):
