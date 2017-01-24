@@ -63,7 +63,7 @@ for contour in contours:
         empty_mask = np.zeros((h, w), np.uint8)
         result = np.where(character_mask == 0, empty_mask,
                           erosion_clone[y:y + h, x:x + w])  # Take Region of interest from erosion_clone
-        res = cv2.resize(result,(200, 200), interpolation = cv2.INTER_CUBIC)
+        res = cv2.resize(result,(200, 200), interpolation = cv2.INTER_CUBIC) #Todo - get W & H as variables
 
         cv2.imwrite(save_path + os.sep + str(count) + " of " + file_name, res)
 
