@@ -59,12 +59,27 @@ for contour in contours:
     else:
         count += 1
         character_mask = np.zeros((h, w), dtype="uint8")
+        width_fixed, height_fixed = 200, 200
         character_mask = cv2.drawContours(character_mask, [contour], -1, 1, cv2.FILLED, offset=(-x, -y))
         empty_mask = np.zeros((h, w), np.uint8)
         result = np.where(character_mask == 0, empty_mask,
                           erosion_clone[y:y + h, x:x + w])  # Take Region of interest from erosion_clone
-        res = cv2.resize(result,(200, 200), interpolation = cv2.INTER_CUBIC) #Todo - get W & H as variables
+        roi_height = result.shape[0]
+        roi_width = result.shape[1]
+        aspectRatio = roi_width / roi_height  # width/h
+        height = width = 0
+        if roi_height > roi_width:
+            height = height_fixed  # threshold
+            width = height * aspectRatio
+        else:
+            width = width_fixed
+            height = width / aspectRatio
 
+        res = cv2.resize(result, (int(width), int(height)),
+                         interpolation=cv2.INTER_CUBIC )
+        top = bottom = int((height_fixed - height) / 2)
+        left = right = int((width_fixed - width) / 2)
+        res = cv2.copyMakeBorder(res, top, bottom, left, right, cv2.BORDER_ISOLATED)
         cv2.imwrite(save_path + os.sep + str(count) + " of " + file_name, res)
 
 print("Chars found: " + str(count))
