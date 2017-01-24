@@ -2,6 +2,8 @@
 # import layers
 # import convolution layers
 
+import os
+
 from PIL import Image
 from keras.models import load_model
 from numpy import *
@@ -42,7 +44,7 @@ class Predictor:
         prediction = model.predict_classes(self.x_test[0:])
         print(prediction)
         for predic in prediction:
-            print(character[predic], end="")
+            print(character[predic], end=" ")
 
 
     def loadModel(self):
