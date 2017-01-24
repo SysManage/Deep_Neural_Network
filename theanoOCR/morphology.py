@@ -1,39 +1,68 @@
 import cv2
+import os
 from matplotlib import pyplot as plt
 import numpy as np
-from theanoOCR import openimage as op
 
-# path = os.path.join(os.path.dirname(__file__), 'Original_letters')
-# inImg = cv2.imread(path+os.sep+"ha-056.jpg")
-img = op.getImage()
-# global thresholding
-# ret1,th1 = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
-# # Otsu's thresholding
-# ret2,th2 = cv2.threshold(img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-# Otsu's thresholding after Gaussian filtering
-blur = cv2.GaussianBlur(img,(5,5),0)
-ret3,th3 = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-kernel = np.ones((6,6),np.uint8)
-erosion = cv2.morphologyEx(th3, cv2.MORPH_HITMISS, kernel)
-# im2, contours, hierarchy = cv2.findContours(erosion,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-# cv2.drawContours(im2, contours, -1, (0,255,100), 1)
-# plot all the images and their histograms
-images = [
-          blur, 0, erosion]
-titles = [
-          'Gaussian filtered Image','Histogram',"Otsu's Thresholding"]
-for i in range(1):
-    plt.subplot(3,3,i*3+1),plt.imshow(images[i*3],'gray')
-    plt.title(titles[i*3]), plt.xticks([]), plt.yticks([])
-    plt.subplot(3,3,i*3+2),plt.hist(images[i*3].ravel(),256)
-    plt.title(titles[i*3+1]), plt.xticks([]), plt.yticks([])
-    plt.subplot(3,3,i*3+3),plt.imshow(images[i*3+2],'gray')
-    plt.title(titles[i*3+2]), plt.xticks([]), plt.yticks([])
-plt.show()
+save_path = os.path.join(os.path.dirname(__file__), 'Original_input_letters')
+open_path = os.path.join(os.path.dirname(__file__), 'Original_letters')
 
-# edges = cv2.Canny(img, 200, 500)
-# plt.subplot(121), plt.imshow(img, cmap='gray')
-# plt.title('Original Image'), plt.xticks([]), plt.yticks([])
-# plt.subplot(122), plt.imshow(edges, cmap='gray')
-# plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
-# plt.show()
+
+def openImage(dir, file_name):
+    inImg = cv2.imread(dir + os.sep + file_name)
+    img = cv2.cvtColor(inImg, cv2.COLOR_BGR2GRAY)
+    return img
+
+
+def binarizeImage(img):
+    blur = cv2.GaussianBlur(img, (5, 5), 0)
+    ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    return th3
+
+
+def removeLines(bin_image):  # must be a binary image
+
+    minLineLength = 100
+    maxLineGap = 70
+    lines = cv2.HoughLinesP(bin_image, 5, np.pi / 180, 1000, minLineLength, maxLineGap)
+    if lines is not None:
+        a, b, c = lines.shape
+        for i in range(a):
+            cv2.line(bin_image, (lines[i][0][0], lines[i][0][1]), (lines[i][0][2], lines[i][0][3]), 0, 3, cv2.LINE_AA)
+
+
+file_name = "word2.jpg"
+img = openImage(open_path, file_name)
+th3 = binarizeImage(img)
+removeLines(th3)
+kernel = np.ones((3, 3), np.uint8)
+erosion = cv2.morphologyEx(th3, cv2.MORPH_OPEN, kernel, iterations=1)
+
+erosion_clone = erosion.copy()
+print(erosion.shape)
+# close = cv2.morphologyEx(th3, cv2.MORPH_HITMISS, kernel)
+# open = cv2.morphologyEx(close, cv2.MORPH_HITMISS, kernel)
+_, contours, hierarchy = cv2.findContours(erosion, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+count = 0
+for contour in contours:
+    # get rectangle bounding contour
+    [x, y, w, h] = boundingRect = cv2.boundingRect(contour)
+
+    # discard areas that are too large
+    if h > 300 and w > 300:
+        continue
+
+    # discard areas that are too small
+    elif h < 35 or w < 35:
+        continue
+
+    else:
+        count += 1
+        character_mask = np.zeros((h, w), dtype="uint8")
+        character_mask = cv2.drawContours(character_mask, [contour], -1, 1, cv2.FILLED, offset=(-x, -y))
+        empty_mask = np.zeros((h, w), np.uint8)
+        result = np.where(character_mask == 0, empty_mask,
+                          erosion_clone[y:y + h, x:x + w])  # Take Region of interest from erosion_clone
+        cv2.imwrite(save_path + os.sep + str(count) + " of " + file_name, result)
+
+print("Chars found: " + str(count))
