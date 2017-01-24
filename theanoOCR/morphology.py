@@ -1,6 +1,6 @@
-import cv2
 import os
-from matplotlib import pyplot as plt
+
+import cv2
 import numpy as np
 
 save_path = os.path.join(os.path.dirname(__file__), 'seg_images')
@@ -63,6 +63,8 @@ for contour in contours:
         empty_mask = np.zeros((h, w), np.uint8)
         result = np.where(character_mask == 0, empty_mask,
                           erosion_clone[y:y + h, x:x + w])  # Take Region of interest from erosion_clone
-        cv2.imwrite(save_path + os.sep + str(count) + " of " + file_name, result)
+        res = cv2.resize(result,(200, 200), interpolation = cv2.INTER_CUBIC)
+
+        cv2.imwrite(save_path + os.sep + str(count) + " of " + file_name, res)
 
 print("Chars found: " + str(count))

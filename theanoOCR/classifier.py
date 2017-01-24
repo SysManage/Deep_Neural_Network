@@ -6,7 +6,6 @@ from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 # from keras.optimizers import SGD, RMSprop, adam
 from keras.utils import np_utils
-from keras.models import load_model
 # import matplotlib
 import numpy as np
 # import theano
@@ -32,9 +31,9 @@ class Classifier:
         self.path = os.path.join(os.path.dirname(__file__), 'Original_letters')
         self.path3 = os.path.join(os.path.dirname(__file__), 'Intermidiate_Step')
         self.path2 = os.path.join(os.path.dirname(__file__), 'Original_input_letters')
-        self.listing = None
+        self.raw_listing = None
         self.num_samples = None
-        self.inlist = None
+        self.traininglist = None
         self.label = None
         self.img_rows, self.img_cols = rows, cols
         self.batch_size = 32
@@ -53,19 +52,19 @@ class Classifier:
         self.y_test = None
 
     def read_original_data(self):
-        self.listing = os.listdir(self.path)
-        self.num_samples = size(self.listing)
-        self.listing.sort()
+        self.raw_listing = os.listdir(self.path)
+        self.num_samples = size(self.raw_listing)
+        self.raw_listing.sort()
 
-    def read_input_data(self):
-        self.inlist = os.listdir(self.path2)
-        # self.num_samples = size(self.listing)
-        self.inlist.sort()
-        # print(len(self.inlist))
+    def read_training_data(self):
+        self.traininglist = os.listdir(self.path2)
+        self.num_samples=size(self.traininglist)
+        self.traininglist.sort()
+
 
     def preprocess(self):
-
-        for file in self.listing:
+        self.read_original_data()
+        for file in self.raw_listing:
             #     # print(file)
             im = Image.open(self.path + '/' + file)
             img = im.resize((self.img_rows, self.img_cols))
@@ -76,7 +75,8 @@ class Classifier:
         time.sleep(5)
 
     def create_matrix(self):
-        imgmatrix = array([array(Image.open(self.path2 + "/" + im2)).flatten() for im2 in self.inlist], 'f')
+        print(self.traininglist)
+        imgmatrix = array([array(Image.open(self.path2 + "/" + im2)).flatten() for im2 in self.traininglist], 'f')
         return imgmatrix
 
     def initialize_data(self):
@@ -111,6 +111,7 @@ class Classifier:
         # convert class vectors to binary class matrices
         self.y_train = np_utils.to_categorical(self.y_train, self.nb_classes)
         self.y_test = np_utils.to_categorical(self.y_test, self.nb_classes)
+
 
     def create_model(self):
         model = Sequential()
@@ -200,10 +201,6 @@ class Classifier:
         fname = os.path.join(os.path.dirname(__file__), 'Ancient_Classifier.h5')
         model.save(fname)
 
-    def loadModel(self):
-        fname = os.path.join(os.path.dirname(__file__), 'Ancient_Classifier.h5')
-        return load_model(fname)
-
     def draw_roc_curve(self, y_score):
         fpr = dict()
         tpr = dict()
@@ -261,7 +258,6 @@ class Classifier:
         plt.legend(loc="lower right")
         plt.show()
 
-
     def getNewModel(self):
         myModel = self.create_model()
         myModel = self.model_compile(myModel)
@@ -269,19 +265,16 @@ class Classifier:
 
 
 myClassifier = Classifier(200, 200)
-myClassifier.read_original_data()
-myClassifier.read_input_data()
+# myClassifier.read_original_data()
+myClassifier.read_training_data()
 #     # myClassifier.preprocess()
 myClassifier.initialize_data()
 
 #     # test_score = myClassifier.get_prediction(myModel)
 #     # myClassifier.draw_roc_curve(test_score)
 """Comment one of following lines interchangeably to train model or to load saved one """
-# myModel = myClassifier.getNewModel()
-myModel=myClassifier.loadModel()
+myModel = myClassifier.getNewModel()
 myClassifier.test_model(myModel)
 myClassifier.get_evaluation(myModel)
 # myClassifier.save_model(myModel)
 
-# fname = "/media/nishan/Entertainment/CNN/weights-Test-CNN.hdf5"
-# model.save_weights(fname)
