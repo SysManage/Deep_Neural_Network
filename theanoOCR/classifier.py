@@ -97,7 +97,7 @@ class Classifier:
 
         (x, y) = (train_data[0], train_data[1])
 
-        self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x, y, test_size=0.2, random_state=4)
+        self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x, y, test_size=0.05, random_state=4)
 
         self.x_train = self.x_train.reshape(self.x_train.shape[0], 1, self.img_rows, self.img_cols)
         self.x_test = self.x_test.reshape(self.x_test.shape[0], 1, self.img_rows, self.img_cols)
