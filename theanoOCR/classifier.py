@@ -6,7 +6,7 @@ from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 # from keras.optimizers import SGD, RMSprop, adam
 from keras.utils import np_utils
-
+from keras.models import load_model
 # import matplotlib
 import numpy as np
 # import theano
@@ -28,7 +28,6 @@ import time
 
 
 class Classifier:
-
     def __init__(self, rows, cols):
         self.path = os.path.join(os.path.dirname(__file__), 'Original_letters')
         self.path3 = os.path.join(os.path.dirname(__file__), 'Intermidiate_Step')
@@ -67,10 +66,10 @@ class Classifier:
     def preprocess(self):
 
         for file in self.listing:
-        #     # print(file)
+            #     # print(file)
             im = Image.open(self.path + '/' + file)
             img = im.resize((self.img_rows, self.img_cols))
-        #     gray = img.convert('L')
+            #     gray = img.convert('L')
             img.save(self.path3 + "/" + file, 'JPEG')
 
         preprocessor.pre_processing()
@@ -155,9 +154,9 @@ class Classifier:
         y_score = model.predict(self.x_test)
         return y_score
 
-    def get_evaluation(self,model):
+    def get_evaluation(self, model):
         score = model.evaluate(self.x_test, self.y_test, verbose=0)
-        print("%s: %.2f%%" % (model.metrics_names[1], score[1]*100))
+        print("%s: %.2f%%" % (model.metrics_names[1], score[1] * 100))
         return score
 
     def test_model(self, model):
@@ -165,7 +164,7 @@ class Classifier:
         evaluation = dict()
         prediction = model.predict_classes(self.x_test[0:])
         real = self.y_test[0:]
-        real=real.tolist()
+        real = real.tolist()
         print(type(real[0][0]))
         # print(real)
 
@@ -193,15 +192,19 @@ class Classifier:
                     evaluation[prediction[x]][1] += 1
 
         for key, value in evaluation.items():
-            print(character[key], "  ---> class ", key, "accuracy rate ", (value[1]/value[0])*100, "%")
+            print(character[key], "  ---> class ", key, "accuracy rate ", (value[1] / value[0]) * 100, "%")
 
         print(evaluation)
 
-    def save_model(self,model):
-        fname = os.path.join(os.path.dirname(__file__), 'Ancient_Classifier')
-        model.save_weights(fname)
+    def save_model(self, model):
+        fname = os.path.join(os.path.dirname(__file__), 'Ancient_Classifier.h5')
+        model.save(fname)
 
-    def draw_roc_curve(self,y_score):
+    def loadModel(self):
+        fname = os.path.join(os.path.dirname(__file__), 'Ancient_Classifier.h5')
+        return load_model(fname)
+
+    def draw_roc_curve(self, y_score):
         fpr = dict()
         tpr = dict()
         roc_auc = dict()
@@ -258,19 +261,27 @@ class Classifier:
         plt.legend(loc="lower right")
         plt.show()
 
+
+    def getNewModel(self):
+        myModel = self.create_model()
+        myModel = self.model_compile(myModel)
+        return self.model_train(myModel)
+
+
 myClassifier = Classifier(200, 200)
 myClassifier.read_original_data()
 myClassifier.read_input_data()
-# myClassifier.preprocess()
+#     # myClassifier.preprocess()
 myClassifier.initialize_data()
-myModel = myClassifier.create_model()
-myModel = myClassifier.model_compile(myModel)
-myModel = myClassifier.model_train(myModel)
-# test_score = myClassifier.get_prediction(myModel)
-# myClassifier.draw_roc_curve(test_score)
+
+#     # test_score = myClassifier.get_prediction(myModel)
+#     # myClassifier.draw_roc_curve(test_score)
+"""Comment one of following lines interchangeably to train model or to load saved one """
+# myModel = myClassifier.getNewModel()
+myModel=myClassifier.loadModel()
 myClassifier.test_model(myModel)
 myClassifier.get_evaluation(myModel)
-myClassifier.save_model(myModel)
+# myClassifier.save_model(myModel)
 
-#fname = "/media/nishan/Entertainment/CNN/weights-Test-CNN.hdf5"
-#model.save_weights(fname)
+# fname = "/media/nishan/Entertainment/CNN/weights-Test-CNN.hdf5"
+# model.save_weights(fname)
